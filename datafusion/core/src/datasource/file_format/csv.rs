@@ -304,9 +304,13 @@ impl CsvFormat {
         pin_mut!(stream);
 
         while let Some(chunk) = stream.next().await.transpose()? {
-            let format = arrow::csv::reader::Format::default()
+            let mut format = arrow::csv::reader::Format::default()
                 .with_header(self.has_header && first_chunk)
+                .with_quote(self.quote())
                 .with_delimiter(self.delimiter);
+            if let Some(escape) = self.escape() {
+                format = format.with_escape(escape)
+            }
 
             let (Schema { fields, .. }, records_read) =
                 format.infer_schema(chunk.reader(), Some(records_to_read))?;
